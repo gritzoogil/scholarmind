@@ -16,7 +16,6 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 ALLOWED_EXTENSIONS = {'pdf'}
 qa_chain = {}
-vectorstore = {}
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -28,7 +27,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    global qa_chain, vectorstore
+    global qa_chain
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
@@ -84,9 +83,36 @@ def reset():
     vectorstores = {}
     return jsonify({'message': 'Session reset'})
 
+@app.route('/remove', methods=['POST'])
+def remove():
+    global qa_chains
+    try:
+        data     = request.get_json()
+        filename = data.get('filename')
+
+        if filename in qa_chain:
+            del qa_chain[filename]
+        if filename in vectorstores:
+            del vectorstores[filename]
+
+        # delete vector store directory
+        import shutil
+        persist_dir = os.path.join('vectorstore', filename.replace('.pdf', ''))
+        if os.path.exists(persist_dir):
+            shutil.rmtree(persist_dir)
+
+        # delete uploaded file
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+        return jsonify({'message': f'{filename} removed'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     os.makedirs('data/uploads', exist_ok=True)
     if os.path.exists('vectorstore'):
         shutil.rmtree('vectorstore')
     os.makedirs('vectorstore', exist_ok=True)
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
