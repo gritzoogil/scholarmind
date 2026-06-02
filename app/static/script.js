@@ -124,29 +124,41 @@ function renderDocList() {
 }
 
 function selectDoc(idx) {
-currentDocFilename = docs[idx].filename;
-renderDocList();
+    currentDocFilename = docs[idx].filename;
+    document.getElementById('activeDocLabel').textContent = currentDocFilename;
+    renderDocList();
 }
 
-function removeDoc(idx, e) {
-e.stopPropagation();
-docs.splice(idx, 1);
-if (docs.length === 0) {
-    currentDocFilename = null;
-    disableChat();
-} else {
-    currentDocFilename = docs[0].filename;
-}
-renderDocList();
+async function removeDoc(idx, e) {
+    e.stopPropagation();
+    const doc = docs[idx];
+
+    try {
+        await fetch(`${API}/remove`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: doc.filename })
+        });
+    } catch (_) {}
+
+    docs.splice(idx, 1);
+    if (docs.length === 0) {
+        currentDocFilename = null;
+        disableChat();
+    } else {
+        currentDocFilename = docs[0].filename;
+    }
+    renderDocList();
 }
 
 // ── chat enable/disable ──
 function enableChat() {
-questionInput.disabled = false;
-sendBtn.disabled = false;
-inputHint.textContent = 'enter ↵ to send · shift+enter for new line';
-statusLabel.textContent = 'ready';
-statusLabel.className = 'topbar__status ready';
+    questionInput.disabled = false;
+    sendBtn.disabled = false;
+    inputHint.textContent = 'enter ↵ to send · shift+enter for new line';
+    statusLabel.textContent = 'ready';
+    statusLabel.className = 'topbar__status ready';
+    document.getElementById('activeDocLabel').textContent = currentDocFilename || 'none';
 }
 
 function disableChat() {
