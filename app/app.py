@@ -115,4 +115,7 @@ if __name__ == '__main__':
     if os.path.exists('vectorstore'):
         shutil.rmtree('vectorstore')
     os.makedirs('vectorstore', exist_ok=True)
+    import threading
+    from src.vector_store import get_embeddings
+    threading.Thread(target=get_embeddings, daemon=True).start()
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

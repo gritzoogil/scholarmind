@@ -8,8 +8,13 @@ from src.logger import logging
 
 VECTORSTORE_DIR = 'vectorstore'
 
+_embeddings = None
+
 def get_embeddings():
-    return SentenceTransformerEmbeddings(model_name='all-MiniLM-L6-v2')
+    global _embeddings
+    if _embeddings is None:
+        _embeddings = SentenceTransformerEmbeddings(model_name='all-MiniLM-L6-v2')
+    return _embeddings
 
 def create_parent_retriever(chunks: list, filename: str) -> ParentDocumentRetriever:
     try:
