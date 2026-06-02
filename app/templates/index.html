@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScholarMind - AI Research Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- top bar -->
+  <header class="topbar">
+    <div class="topbar__wordmark">
+      <span class="topbar__wordmark-dot"></span>
+      ScholarMind
+    </div>
+    <div class="topbar__right">
+      <span class="topbar__status" id="statusLabel">awaiting document</span>
+      <button class="btn" id="resetBtn" onclick="resetSession()">reset session</button>
+    </div>
+  </header>
+
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar__section">
+      <div class="sidebar__label">documents</div>
+
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".pdf" multiple />
+        <div class="upload-zone__icon">⬆</div>
+        <div class="upload-zone__primary">Drop PDF here</div>
+        <div class="upload-zone__secondary">or click to browse</div>
+      </div>
+
+      <div class="upload-progress" id="uploadProgress">
+        <div class="progress-bar">
+          <div class="progress-bar__fill" id="progressFill"></div>
+        </div>
+        <div class="progress-label" id="progressLabel">processing…</div>
+      </div>
+    </div>
+
+    <div class="doc-list" id="docList">
+      <div class="doc-list__empty" id="docEmpty">
+        No documents loaded.<br />
+        Upload a PDF to begin.
+      </div>
+    </div>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__footer-meta" id="sidebarMeta">
+        model &nbsp;·&nbsp; llama3.2<br />
+        store &nbsp;·&nbsp; chromadb<br />
+        embed &nbsp;·&nbsp; all-MiniLM-L6-v2
+      </div>
+    </div>
+  </aside>
+
+  <!-- chat panel -->
+  <main class="chat-panel" style="position:relative;">
+
+    <!-- empty state -->
+    <div class="chat-empty" id="chatEmpty">
+      <div class="chat-empty__glyph">◈</div>
+      <div class="chat-empty__title">Ask your document anything.</div>
+      <div class="chat-empty__sub">
+        Upload a research paper or thesis. ScholarMind answers from the source with no hallucination, full traceability.
+      </div>
+      <div class="chat-empty__hints">
+        <button class="chat-empty__hint" onclick="useHint(this)">What is the main contribution of this paper?</button>
+        <button class="chat-empty__hint" onclick="useHint(this)">What datasets were used for evaluation?</button>
+        <button class="chat-empty__hint" onclick="useHint(this)">Summarise the methodology in plain English.</button>
+        <button class="chat-empty__hint" onclick="useHint(this)">What are the limitations acknowledged by the authors?</button>
+      </div>
+    </div>
+
+    <!-- message list (hidden until first message) -->
+    <div class="message-list" id="messageList" style="display:none;"></div>
+
+    <!-- input bar -->
+    <div class="input-bar">
+        <div style="flex:1; display:flex; flex-direction:column; gap: var(--space-2);">
+            <div style="display:flex; gap: var(--space-3); align-items:flex-end;">
+            <textarea
+                class="input-bar__textarea"
+                id="questionInput"
+                rows="1"
+                placeholder="Ask a question about your document…"
+                disabled
+                style="flex:1;"
+            ></textarea>
+            <button class="input-bar__send" id="sendBtn" disabled onclick="sendQuestion()">↑</button>
+            </div>
+            <div class="input-bar__hint" id="inputHint">upload a document to begin</div>
+        </div>
+    </div>
+
+  </main>
+
+</div>
+
+<script src="/static/script.js"></script>
+
+</body>
+</html>

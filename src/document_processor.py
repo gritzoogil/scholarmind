@@ -20,7 +20,17 @@ def load_and_split_pdf(pdf_path: str) -> list:
             chunk_overlap=200,
             separators=['\n\n', '\n', '. ', ' ', '']
         )
-        chunks = splitter.split_documents(pages)
+        chunks = []
+        for page in pages:
+            page_chunks = splitter.split_documents([page])
+            for chunk in page_chunks:
+                chunk.metadata['page'] = page.metadata.get('page', 0)
+                chunk.metadata['source'] = pdf_path
+            chunks.extend(page_chunks)
+
+        if len(chunks) == 0:
+            raise ValueError('No text could be extracted from this PDF')
+
         logging.info(f'Split into {len(chunks)} chunks')
 
         return chunks

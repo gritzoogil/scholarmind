@@ -1,11 +1,12 @@
 import sys
 import os
+import shutil
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 from src.document_processor import load_and_split_pdf
-from src.vector_store import create_vectorstore, load_vectorstore, vectorstore_exists
+from src.vector_store import create_parent_retriever
 from src.qa_chain import build_qa_chain, ask_question
 from src.logger import logging
 
@@ -44,10 +45,8 @@ def upload():
 
         logging.info(f'Processing: {filename}')
         chunks     = load_and_split_pdf(filepath)
-        vs = create_vectorstore(chunks, filename)
-        qa = build_qa_chain(vs)
-
-        vectorstore[filename] = vs
+        retriever = create_parent_retriever(chunks, filename)
+        qa = build_qa_chain(retriever)
         qa_chain[filename] = qa
 
         return jsonify({
@@ -87,4 +86,7 @@ def reset():
 
 if __name__ == '__main__':
     os.makedirs('data/uploads', exist_ok=True)
+    if os.path.exists('vectorstore'):
+        shutil.rmtree('vectorstore')
+    os.makedirs('vectorstore', exist_ok=True)
     app.run(debug=True, host='127.0.0.1', port=5000)

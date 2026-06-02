@@ -1,47 +1,46 @@
 import os
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import SentenceTransformerEmbeddings
+from langchain_classic.retrievers import ParentDocumentRetriever
+from langchain_classic.storage import InMemoryStore
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from src.logger import logging
 
 VECTORSTORE_DIR = 'vectorstore'
 
 def get_embeddings():
-    return SentenceTransformerEmbeddings(
-        model_name='all-MiniLM-L6-v2'
-    )
+    return SentenceTransformerEmbeddings(model_name='all-MiniLM-L6-v2')
 
-def create_vectorstore(chunks: list, filename: str) -> Chroma:
+def create_parent_retriever(chunks: list, filename: str) -> ParentDocumentRetriever:
     try:
-        logging.info(f'Creating vector store for: {filename}')
+        logging.info(f'Creating parent retriever for: {filename}')
         embeddings = get_embeddings()
-        
-        # each doc gets its own subdirectory
-        persist_dir = os.path.join(VECTORSTORE_DIR, filename.replace('.pdf', ''))
-        
-        vectorstore = Chroma.from_documents(
-            documents=chunks,
-            embedding=embeddings,
-            persist_directory=persist_dir
-        )
-        logging.info(f'Vector store created for: {filename}')
-        return vectorstore
 
-    except Exception as e:
-        logging.error(f'Error creating vector store: {str(e)}')
-        raise
-
-def load_vectorstore() -> Chroma:
-    try:
-        logging.info('Loading existing vector store')
-        embeddings = get_embeddings()
         vectorstore = Chroma(
-            persist_directory=VECTORSTORE_DIR,
-            embedding_function=embeddings
+            embedding_function=embeddings,
+            persist_directory=None  # in-memory, no disk persistence needed
         )
-        return vectorstore
+
+        store = InMemoryStore()
+
+        child_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=400,
+            chunk_overlap=50
+        )
+
+        retriever = ParentDocumentRetriever(
+            vectorstore=vectorstore,
+            docstore=store,
+            child_splitter=child_splitter,
+            search_kwargs={'k':5}
+        )
+
+        retriever.add_documents(chunks)
+        logging.info(f'Parent retriever created for: {filename}')
+        return retriever
 
     except Exception as e:
-        logging.error(f'Error loading vector store: {str(e)}')
+        logging.error(f'Error creating parent retriever: {str(e)}')
         raise
 
 def vectorstore_exists() -> bool:

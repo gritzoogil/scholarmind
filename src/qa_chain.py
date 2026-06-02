@@ -4,14 +4,20 @@ from langchain_classic.memory import ConversationBufferMemory
 from src.logger import logging
 from langchain_core.prompts import PromptTemplate
 
-def build_qa_chain(vectorstore):
+import os
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+
+load_dotenv()
+
+def build_qa_chain(retriever) -> ConversationalRetrievalChain:
     try:
         logging.info('Building QA chain')
 
-        llm = OllamaLLM(
-            model='llama3.2',
+        llm = ChatGroq(
+            model='llama-3.1-8b-instant',
             temperature=0.1,
-            base_url='http://127.0.0.1:11434'
+            api_key=os.environ.get('GROQ_API_KEY')
         )
 
         memory = ConversationBufferMemory(
@@ -21,12 +27,15 @@ def build_qa_chain(vectorstore):
         )
 
         custom_prompt = PromptTemplate(
-            template="""You are ScholarMind, an expert AI research assistant. Your task is to answer the user's question accurately using only the provided context and conversation history.
+            template="""You are ScholarMind, an expert AI research assistant specializing in academic document analysis. 
 
-        Guidelines:
-        1. Be direct, objective, and specific.
-        2. Rely heavily on the provided context. If the context contains partial information, use it to construct a factual, partial answer.
-        3. If the context truly contains zero relevant information to answer the question, reply exactly with: "I'm sorry, but I cannot find that information in the provided document." Do not attempt to make up an answer.
+        Your goal is to extract insights from fragmented document text, which may contain OCR typos, broken tables, or partial data.
+
+        Instructions:
+        1. **Analyze Aggressively**: The context contains raw page fragments. Piecing them together to form an coherent academic narrative is your core job. Summarize what is visible.
+        2. **Absolute Data Grounding**: Never invent, assume, or extrapolate exact numerical values, percentages (e.g., 100%, 0%), or statistical conclusions. If a specific number or statistical decision (reject/accept null hypothesis) is not explicitly printed in the text, do not state it. 
+        3. **Handle Messy Text**: Ignore formatting errors, split words (like "se ction"), or raw mathematical formulas when reading text. Focus purely on the underlying findings.
+        4. **Fallback Rule**: Only say you cannot find the information if the text below is completely unrelated to the topic of the question.
 
         <context>
         {context}
@@ -44,14 +53,7 @@ def build_qa_chain(vectorstore):
 
         qa_chain = ConversationalRetrievalChain.from_llm(
             llm=llm,
-            retriever=vectorstore.as_retriever(
-                search_type='mmr',
-                search_kwargs={
-                    'k': 6,
-                    'fetch_k': 20,
-                    'lambda_mult': 0.7
-                    }
-            ),
+            retriever=retriever,
             memory=memory,
             return_source_documents=True,
             combine_docs_chain_kwargs={'prompt': custom_prompt},
