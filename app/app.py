@@ -14,7 +14,8 @@ app.config['UPLOAD_FOLDER'] = 'data/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 ALLOWED_EXTENSIONS = {'pdf'}
-qa_chain = None
+qa_chain = {}
+vectorstore = {}
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -26,7 +27,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    global qa_chain
+    global qa_chain, vectorstore
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
@@ -43,8 +44,11 @@ def upload():
 
         logging.info(f'Processing: {filename}')
         chunks     = load_and_split_pdf(filepath)
-        vectorstore = create_vectorstore(chunks)
-        qa_chain   = build_qa_chain(vectorstore)
+        vs = create_vectorstore(chunks, filename)
+        qa = build_qa_chain(vs)
+
+        vectorstore[filename] = vs
+        qa_chain[filename] = qa
 
         return jsonify({
             'message': f'Document processed successfully',
@@ -57,18 +61,18 @@ def upload():
 
 @app.route('/ask', methods=['POST'])
 def ask():
-    global qa_chain
+    global qa_chains
     try:
-        if qa_chain is None:
-            return jsonify({'error': 'No document loaded. Upload a PDF first.'}), 400
-
         data     = request.get_json()
         question = data.get('question', '').strip()
+        filename = data.get('filename', None)
 
         if not question:
             return jsonify({'error': 'No question provided'}), 400
+        if not filename or filename not in qa_chain:
+            return jsonify({'error': 'No document selected.'}), 400
 
-        result = ask_question(qa_chain, question)
+        result = ask_question(qa_chain[filename], question)
         return jsonify(result)
 
     except Exception as e:
@@ -76,11 +80,11 @@ def ask():
 
 @app.route('/reset', methods=['POST'])
 def reset():
-    global qa_chain
-    qa_chain = None
+    global qa_chain, vectorstores
+    qa_chain = {}
+    vectorstores = {}
     return jsonify({'message': 'Session reset'})
 
 if __name__ == '__main__':
     os.makedirs('data/uploads', exist_ok=True)
-    app.run(debug=True, host='0.0.0.0',
-            port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=True, host='127.0.0.1', port=5000)
