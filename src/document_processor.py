@@ -13,6 +13,9 @@ def load_and_split_pdf(pdf_path: str) -> list:
 
         loader = PyPDFLoader(pdf_path)
         pages  = loader.load()
+
+        if len(pages) == 0:
+            raise ValueError('PDF appears to be empty or unreadable')
         logging.info(f'Loaded {len(pages)} pages')
 
         splitter = RecursiveCharacterTextSplitter(
