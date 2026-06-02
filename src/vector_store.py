@@ -10,16 +10,20 @@ def get_embeddings():
         model_name='all-MiniLM-L6-v2'
     )
 
-def create_vectorstore(chunks: list) -> Chroma:
+def create_vectorstore(chunks: list, filename: str) -> Chroma:
     try:
-        logging.info('Creating vector store')
+        logging.info(f'Creating vector store for: {filename}')
         embeddings = get_embeddings()
+        
+        # each doc gets its own subdirectory
+        persist_dir = os.path.join(VECTORSTORE_DIR, filename.replace('.pdf', ''))
+        
         vectorstore = Chroma.from_documents(
             documents=chunks,
             embedding=embeddings,
-            persist_directory=VECTORSTORE_DIR
+            persist_directory=persist_dir
         )
-        logging.info('Vector store created')
+        logging.info(f'Vector store created for: {filename}')
         return vectorstore
 
     except Exception as e:
