@@ -1,1 +1,1 @@
-web: python app/app.py
+web: gunicorn --bind 0.0.0.0:$PORT --timeout 120 --chdir app app:app

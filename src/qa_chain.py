@@ -1,4 +1,3 @@
-from langchain_ollama import OllamaLLM
 from langchain_classic.chains import ConversationalRetrievalChain
 from langchain_classic.memory import ConversationBufferMemory
 from src.logger import logging
