@@ -3,28 +3,13 @@ import os
 import shutil
 
 print("=== APP STARTING ===", flush=True)
-print(f"Python: {sys.version}", flush=True)
-print(f"Working dir: {os.getcwd()}", flush=True)
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    from flask import Flask, request, jsonify, render_template
-    from werkzeug.utils import secure_filename
-    print("=== Flask imported ===", flush=True)
-except Exception as e:
-    print(f"=== Flask import error: {e} ===", flush=True)
-    sys.exit(1)
+from flask import Flask, request, jsonify, render_template
+from werkzeug.utils import secure_filename
 
-try:
-    from src.document_processor import load_and_split_pdf
-    from src.vector_store import create_parent_retriever
-    from src.qa_chain import build_qa_chain, ask_question
-    from src.logger import logging
-    print("=== src imports OK ===", flush=True)
-except Exception as e:
-    print(f"=== src import error: {e} ===", flush=True)
-    sys.exit(1)
+print("=== Flask imported ===", flush=True)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'data/uploads'
@@ -35,7 +20,7 @@ qa_chain = {}
 os.makedirs('data/uploads', exist_ok=True)
 os.makedirs('vectorstore', exist_ok=True)
 
-print("=== Flask app created ===", flush=True)
+print("=== Flask app ready, port should open now ===", flush=True)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -48,6 +33,11 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload():
     global qa_chain
+    # lazy import — only loads when first upload happens
+    from src.document_processor import load_and_split_pdf
+    from src.vector_store import create_parent_retriever
+    from src.qa_chain import build_qa_chain
+    from src.logger import logging
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
@@ -74,6 +64,7 @@ def upload():
 
 @app.route('/ask', methods=['POST'])
 def ask():
+    from src.qa_chain import ask_question
     try:
         data = request.get_json()
         question = data.get('question', '').strip()
