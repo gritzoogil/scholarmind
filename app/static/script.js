@@ -4,7 +4,7 @@ let messages = [];     // { role, content, sources }
 let isLoading = false;
 let currentDocFilename = null;
 
-const API = 'http://localhost:5000';
+const API = '';
 
 // ── elements ──
 const fileInput     = document.getElementById('fileInput');
